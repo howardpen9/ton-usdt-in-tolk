@@ -1,5 +1,5 @@
 import { toNano } from '@ton/core';
-import { TolkExample } from '../wrappers/TolkExample';
+import { TolkExample } from '../wrappers/JettonMinter';
 import { compile, NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {

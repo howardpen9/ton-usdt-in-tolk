@@ -1,5 +1,5 @@
 import { Address, toNano } from '@ton/core';
-import { TolkExample } from '../wrappers/TolkExample';
+import { TolkExample } from '../wrappers/JettonMinter';
 import { NetworkProvider, sleep } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider, args: string[]) {

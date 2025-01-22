@@ -1,78 +1,97 @@
-import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
-import { Cell, toNano } from '@ton/core';
-import { compile } from '@ton/blueprint';
+import { Blockchain, SandboxContract, TreasuryContract,printTransactionFees, prettyLogTransactions,} from '@ton/sandbox';
+import { Cell, toNano, beginCell } from '@ton/core';
 import '@ton/test-utils';
-import { TolkExample } from '../wrappers/TolkExample'; // The place for the wrapper 
+import { compile } from '@ton/blueprint';
+import { Minter } from '../wrappers/JettonMinter';
+import { Wallet } from '../wrappers/JettonWallet';
 
-describe('TolkExample', () => {
+import { buildOnchainMetadata } from "../scripts/jetton-helpers";
+
+const jettonParams = {
+    name: "test USDT",
+    description: "This is description for test USDT",
+    symbol: "testUSDT",
+    image: "https://i.ibb.co/J3rk47X/USDT-ocean.webp"
+};
+let jetton_content_metadata = buildOnchainMetadata(jettonParams);
+
+describe('Sample', () => {
     let code: Cell;
-
-    beforeAll(async () => {
-        code = await compile('TolkExample');
-    });
 
     let blockchain: Blockchain;
     let deployer: SandboxContract<TreasuryContract>;
-    let tolkExample: SandboxContract<TolkExample>;
+    let treasury: SandboxContract<TreasuryContract>;
+    let minter: SandboxContract<Minter>;
+    let jettonWallet_deployer: SandboxContract<Wallet>;
+
+    beforeAll(async () => {
+        code = await compile('JettonMinter');
+    });
+
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
-
-        tolkExample = blockchain.openContract(
-            TolkExample.createFromConfig(
+        deployer = await blockchain.treasury('deployer');
+        treasury = await blockchain.treasury('treasury');
+        minter = blockchain.openContract(
+            Minter.createFromConfig(
                 {
-                    id: 0,       // ctxID
-                    counter: 0,  // ctxCounter
+                    total_supply: 0n,
+                    admin_address: deployer.address!!,
+                    next_admin_address: treasury.address!!,
+                    jetton_wallet_code:  await compile("JettonWallet"),
+                    metadata_url: jetton_content_metadata
                 },
                 code
             )
         );
+        
+        console.log("Deployer Address: " + deployer.address);
+        console.log("Minter Address: " + minter.address);
 
-        deployer = await blockchain.treasury('deployer');
+        jettonWallet_deployer = blockchain.openContract(
+            Wallet.createFromConfig(
+                { owner_address: deployer.address, jetton_master_address: minter.address },
+                await compile("JettonWallet")
+            )
+        );
 
-        const deployResult = await tolkExample.sendDeploy(deployer.getSender(), toNano('0.05'));
+        let master_msg = beginCell()
+                            .storeUint(395134233, 32) // opCode: TokenTransferInternal / 0x178d4519
+                            .storeUint(0, 64) // query_id
+                            .storeCoins(toNano('100000')) // jetton_amount
+                            .storeAddress(minter.address) // from_address
+                            .storeAddress(deployer.address) // response_address
+                            .storeCoins(10000) // forward_ton_amount
+                            .storeUint(0, 1) // whether forward_payload or not
+                        .endCell();
+
+        const deployResult = await minter.sendMint(deployer.getSender(), { // 0x642b7d07
+            value: toNano('1.5'),
+            queryID: 0,
+            toAddress: deployer.address,
+            tonAmount: toNano('0.1'),
+            master_msg: master_msg
+        });
+
+
         expect(deployResult.transactions).toHaveTransaction({
             from: deployer.address,
-            to: tolkExample.address,
+            to: minter.address,
             deploy: true,
             success: true,
         });
+        printTransactionFees(deployResult.transactions);
+        prettyLogTransactions(deployResult.transactions);
     });
+
 
     it('should deploy', async () => {
-        // the check is done inside beforeEach
-        // blockchain and tolkExample are ready to use
-    });
+        let balanceDeployer = await jettonWallet_deployer.getBalance();
+        console.log("Balance: " + balanceDeployer);
+        
+        // let fetch_read = await jettonWallet_deployer.getStatus();
+        // console.log("Wallet Status(deployer's): " + fetch_read);
 
-    it('should increase counter', async () => {
-        const increaseTimes = 3;
-
-        for (let i = 0; i < increaseTimes; i++) {
-            console.log(`increase ${i + 1}/${increaseTimes}`);
-
-            const increaser = await blockchain.treasury('increaser' + i);
-
-            const counterBefore = await tolkExample.getCounter();
-            console.log('counter before increasing', counterBefore);
-
-            const increaseBy = Math.floor(Math.random() * 100);
-            console.log('increasing by', increaseBy);
-
-            const increaseResult = await tolkExample.sendIncrease(increaser.getSender(), {
-                increaseBy,
-                value: toNano('0.05'),
-            });
-
-            expect(increaseResult.transactions).toHaveTransaction({
-                from: increaser.address,
-                to: tolkExample.address,
-                success: true,
-            });
-
-            const counterAfter = await tolkExample.getCounter();
-            console.log('counter after increasing', counterAfter);
-
-            expect(counterAfter).toBe(counterBefore + increaseBy);
-        }
     });
 });
