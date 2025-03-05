@@ -23,7 +23,7 @@ describe('Sample', () => {
     let treasury: SandboxContract<TreasuryContract>;
     let minter: SandboxContract<Minter>;
     let jettonWallet_deployer: SandboxContract<Wallet>;
-
+    let jettonWallet_treasury: SandboxContract<Wallet>;
     beforeAll(async () => {
         code = await compile('JettonMinter');
     });
@@ -51,18 +51,32 @@ describe('Sample', () => {
 
         jettonWallet_deployer = blockchain.openContract(
             Wallet.createFromConfig(
-                { owner_address: deployer.address, jetton_master_address: minter.address },
+                { 
+                    owner_address: deployer.address, 
+                    jetton_master_address: minter.address 
+                },
                 await compile("JettonWallet")
             )
         );
 
+        jettonWallet_treasury = blockchain.openContract(
+            Wallet.createFromConfig(
+                { 
+                    owner_address: treasury.address, 
+                    jetton_master_address: minter.address 
+                },
+                await compile("JettonWallet")
+            )
+        );
+
+        // Mint 10000 USDT to deployer
         let master_msg = beginCell()
                             .storeUint(395134233, 32) // opCode: TokenTransferInternal / 0x178d4519
                             .storeUint(0, 64) // query_id
                             .storeCoins(toNano('100000')) // jetton_amount
                             .storeAddress(minter.address) // from_address
                             .storeAddress(deployer.address) // response_address
-                            .storeCoins(10000) // forward_ton_amount
+                            .storeCoins(10000) // forward_ton_amount, 0.01 TON
                             .storeUint(0, 1) // whether forward_payload or not
                         .endCell();
 
@@ -90,8 +104,11 @@ describe('Sample', () => {
         let balanceDeployer = await jettonWallet_deployer.getBalance();
         console.log("Balance: " + balanceDeployer);
         
-        // let fetch_read = await jettonWallet_deployer.getStatus();
-        // console.log("Wallet Status(deployer's): " + fetch_read);
+        let fetch_read = await jettonWallet_deployer.getBalance();
+        console.log("Deployer's Jetton Balance: " + fetch_read);
+
+        let fetch_read_treasury = await jettonWallet_treasury.getBalance();
+        console.log("Treasury's Jetton Balance: " + fetch_read_treasury);
 
     });
 });
