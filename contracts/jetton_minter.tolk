@@ -19,6 +19,7 @@ fun loadData(): (int, slice, slice, cell, cell) {
     var jetton_wallet_code = ds.loadRef();
     var metadata_url = ds.loadRef();
     ds.assertEndOfSlice();
+
     return (total_supply, admin_address, next_admin_address, jetton_wallet_code, metadata_url);
 }
 
@@ -28,18 +29,17 @@ fun loadData(): (int, slice, slice, cell, cell) {
 fun saveData(total_supply: int, admin_address: slice, next_admin_address: slice, jetton_wallet_code: cell, metadata_url: cell) {
     setContractData(
         beginCell()
-        .storeCoins(total_supply)
-        .storeSlice(admin_address)
-        .storeSlice(next_admin_address)
-        .storeRef(jetton_wallet_code)
-        .storeRef(metadata_url)
+            .storeCoins(total_supply)
+            .storeSlice(admin_address)
+            .storeSlice(next_admin_address)
+            .storeRef(jetton_wallet_code)
+            .storeRef(metadata_url)
         .endCell()
     );
 }
 
 fun sendToJettonWallet(to_address: slice, jetton_wallet_code: cell, ton_amount: int, master_msg: cell, need_state_init: int){
     reserveToncoinsOnBalance(ONE_TON, SEND_MODE_REGULAR); // reserve for storage fees
-
     var state_init: cell = calculateJettonWalletStateInit(to_address, getMyAddress(), jetton_wallet_code);
     var to_wallet_address: slice = calculateJettonWalletAddress(state_init);
 
@@ -71,10 +71,10 @@ fun onInternalMessage(myBalance: int, msgValue: int, msgFull: cell, msgBody: sli
 
     if (isMessageBounced(flags)) { // ignore all bounced messages
         msgBody.skipBouncedPrefix(); 
-
         if (msgBody.loadMessageOp() != OP_INTERNAL_TRANSFER) { // process only mint bounces
             return (); 
         }
+
         msgBody.skipMessageQueryId();
         var jettonAmount = msgBody.loadCoins();
         var (total_supply, admin_address, next_admin_address, jetton_wallet_code, metadata_uri) = loadData();
@@ -88,8 +88,9 @@ fun onInternalMessage(myBalance: int, msgValue: int, msgFull: cell, msgBody: sli
     
     val op = msgBody.loadMessageOp(); // by convention, the first 32 bits of incoming message is the op
     val queryID = msgBody.loadMessageQueryId(); // also by convention, the next 64 bits contain the "query id", although this is not always the case
+    
     var (total_supply, admin_address, next_admin_address, jetton_wallet_code, metadata_uri) = loadData();
-
+    
     if (op == OP_MINT) { // 0x642b7d07
         assert(isSliceBitsEqual(senderAddress, admin_address), ERROR_NOT_OWNER);
         

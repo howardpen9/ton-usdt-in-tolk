@@ -1,5 +1,6 @@
 import { Blockchain, SandboxContract, TreasuryContract,printTransactionFees, prettyLogTransactions,} from '@ton/sandbox';
 import { Cell, toNano, beginCell } from '@ton/core';
+// import '@ton/ton';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
 import { Minter } from '../wrappers/JettonMinter';
