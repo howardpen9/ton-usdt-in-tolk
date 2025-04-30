@@ -22,8 +22,8 @@ fun pack_jetton_wallet_data(status: int, balance: int, owner_address: slice, jet
 fun calculateJettonWalletStateInit(owner_address: slice, jetton_master_address: slice, jetton_wallet_code: cell): cell {
     return beginCell()
             .storeUint(0, 2) // 0b00 - No split_depth; No special
-            .storeMaybeRef(jetton_wallet_code)
-            .storeMaybeRef(
+            .storeMaybeRef(jetton_wallet_code)  // code 
+            .storeMaybeRef(                     // data 
                 pack_jetton_wallet_data(
                     0, // status
                     0, //  balance

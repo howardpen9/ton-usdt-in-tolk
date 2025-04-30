@@ -6,8 +6,6 @@ const ONE_TON = 1000000000;
 const MIN_STORAGE_DURATION = 5 * 365 * 24 * 3600; // 5 years
 
 
-
-
 //# Precompiled constants
 //
 //All of the contents are result of contract emulation tests

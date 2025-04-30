@@ -10,12 +10,12 @@ const RESERVE_AT_MOST = 2;
 
 fun loadData(): (int, int, slice, slice) {
     var ds = getContractData().beginParse();
+
     var status = ds.loadUint(4);
     var balance = ds.loadCoins();
     var owner_address = ds.loadAddress();
     var jetton_master_address = ds.loadAddress();
     ds.assertEndOfSlice();
-
     return (status, balance, owner_address, jetton_master_address);
 }
 

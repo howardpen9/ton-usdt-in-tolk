@@ -1,4 +1,5 @@
 import "@stdlib/tvm-dicts"
+import "@stdlib/common"
 import "@stdlib/gas-payments"
 
 import "./utils/op_codes.tolk";
@@ -54,7 +55,6 @@ fun sendToJettonWallet(to_address: slice, jetton_wallet_code: cell, ton_amount: 
     } else {
         msg = msg.storeOnlyBodyRef(master_msg);
     }
-
     sendRawMessage(msg.endCell(), SEND_MODE_PAY_FEES_SEPARATELY | SEND_MODE_BOUNCE_ON_ACTION_FAIL);
 }
 
