@@ -1,5 +1,4 @@
 import "@stdlib/tvm-dicts"
-import "@stdlib/common"
 import "@stdlib/gas-payments"
 
 import "./utils/op_codes.tolk";
